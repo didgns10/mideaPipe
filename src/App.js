@@ -3,18 +3,24 @@ import { FaceMesh } from "@mediapipe/face_mesh"
 import * as Facemesh from "@mediapipe/face_mesh"
 import * as cam from "@mediapipe/camera_utils"
 import Webcam from "react-webcam"
-import { useRef, useEffect } from "react"
+import Button from "react-bootstrap/Button"
+import React, { useRef, useEffect, useState } from "react"
 
 function App() {
   const webcamRef = useRef(null)
   const canvasRef = useRef(null)
+  const [landmark, setLandmark] = useState([])
+  const [landmarkCapture, setLandmarkCapture] = useState([])
+
   var camera = null
+  var land = []
+  var minDistance = 10000
+  var landmarkCaptures = []
+  var captuereDistance = 0
 
   const connect = window.drawConnectors
 
-  function onResults(results) {
-    console.log(results)
-
+  const onResults = async (results) => {
     //Setting H,W of canvas
     canvasRef.current.width = webcamRef.current.video.videoWidth
     canvasRef.current.height = webcamRef.current.video.videoHeight
@@ -32,6 +38,36 @@ function App() {
       canvasElement.height
     )
     if (results.multiFaceLandmarks) {
+      //console.log(results)
+      land = results.multiFaceLandmarks[0]
+      // if (
+      //   landmarkCaptures !== undefined &&
+      //   landmarkCaptures !== null &&
+      //   landmarkCaptures.length !== 0 &&
+      //   land !== undefined
+      // ) {
+      //   let distance = 0
+      //   for (let i = 0; i < landmarkCaptures.length; i++) {
+      //     distance += euclideanDistance3D(landmarkCaptures[i], land[i])
+      //   }
+      //   console.log(distance)
+      //   if (distance < 30) {
+      //     //console.log("minDistance", distance)
+      //   }
+      //   // if (minDistance > distance) {
+      //   //   console.log("minDistance", distance)
+      //   //   minDistance = distance
+      //   // }
+      // }
+      if (land !== undefined && captuereDistance !== 0) {
+        let distance = 0
+        for (let i = 0; i < land.length - 1; i++) {
+          distance += euclideanDistance3D(land[i], land[i + 1])
+        }
+        const diffDistance = absDistance(captuereDistance, distance)
+        console.log(diffDistance)
+      }
+
       for (const landmarks of results.multiFaceLandmarks) {
         connect(canvasCtx, landmarks, Facemesh.FACEMESH_TESSELATION, {
           color: "#C0C0C070",
@@ -63,6 +99,7 @@ function App() {
         })
       }
     }
+
     canvasCtx.restore()
   }
 
@@ -96,10 +133,50 @@ function App() {
     }
   })
 
+  function euclideanDistance3D(p1, p2) {
+    const dx = p1.x - p2.x
+    const dy = p1.y - p2.y
+    const dz = p1.z - p2.z
+    return Math.sqrt(dx * dx + dy * dy + dz * dz)
+  }
+
+  function absDistance(p1, p2) {
+    return Math.abs(p1 - p2)
+  }
+
+  const buttonClick = async () => {
+    console.log(land)
+    landmarkCaptures = land
+
+    if (
+      landmarkCaptures !== undefined &&
+      landmarkCaptures !== null &&
+      landmarkCaptures.length !== 0
+    ) {
+      let distance = 0
+      for (let i = 0; i < landmarkCaptures.length - 1; i++) {
+        distance += euclideanDistance3D(
+          landmarkCaptures[i],
+          landmarkCaptures[i + 1]
+        )
+      }
+      captuereDistance = distance
+      console.log(distance)
+    }
+  }
+
   return (
-    <div className="App">
+    <div className="container-fluid">
+      <div className="text-center">
+        <button
+          type="button"
+          className="btn btn-outline-primary"
+          onClick={buttonClick}
+        >
+          버튼
+        </button>
+      </div>
       <Webcam
-        hidden
         ref={webcamRef}
         style={{
           position: "absolute",
@@ -113,8 +190,8 @@ function App() {
           right: 0,
           textAlign: "center",
           zIndex: 9,
-          width: 640,
-          height: 480,
+          width: "auto",
+          height: "auto",
         }}
       />
       <canvas
@@ -131,8 +208,8 @@ function App() {
           right: 0,
           textAlign: "center",
           zIndex: 9,
-          width: 640,
-          height: 480,
+          width: "auto",
+          height: "auto",
         }}
       ></canvas>
     </div>
