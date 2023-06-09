@@ -5,6 +5,8 @@ import * as cam from "@mediapipe/camera_utils"
 import Webcam from "react-webcam"
 import React, { useRef, useEffect, useState } from "react"
 
+import axios from "axios"
+
 function App() {
   const webcamRef = useRef(null)
   const canvasRef = useRef(null)
@@ -17,20 +19,25 @@ function App() {
   var landmarkCaptures = []
   var captureDistance = 0
   var results1 = null
+  var originalXAver = 0
+  var originalYAver = 0
+  var refPoints = []
+  var meshArrays = []
+  var registerMeshPoints = false
+
+  var test = false
 
   //스케일 변수
   var captuer0to152Distance = 0
 
-  //평균 값
-  var aver = 0
-  var averSum = 0
-  var averCount = 0
+  //최솟 값
   var minimum = 100000
 
   const connect = window.drawConnectors
 
   const onResults = async (results) => {
     results1 = results
+
     //Setting H,W of canvas
     canvasRef.current.width = webcamRef.current.video.videoWidth
     canvasRef.current.height = webcamRef.current.video.videoHeight
@@ -89,6 +96,41 @@ function App() {
 
       //console.log(results)
       land = results.multiFaceLandmarks[0]
+
+      let XAver = 0
+      let YAver = 0
+      if (land !== undefined) {
+        const angle = getAngle(land[4], land[145], land[374])
+        // console.log(
+        //   "leftx:",
+        //   angle[0],
+        //   " lefty:",
+        //   angle[1],
+        //   "rightx:",
+        //   angle[2],
+        //   " righty:",
+        //   angle[3]
+        // )
+        XAver = (angle[0] + angle[2]) / 2 - 1.5
+        YAver = (angle[1] + angle[3]) / 2 - 0.9
+
+        if (
+          registerMeshPoints &&
+          refPoints.length > 0 &&
+          meshArrays.length < 24
+        ) {
+          const x = refPoints[meshArrays.length][0]
+          const y = refPoints[meshArrays.length][1]
+
+          //console.log(Math.abs(x - XAver), Math.abs(y - YAver))
+
+          if (Math.abs(x - XAver) < 0.1 && Math.abs(y - YAver) < 0.1) {
+            meshArrays.push([XAver, YAver])
+            console.log(meshArrays)
+          }
+        }
+      }
+
       if (
         landmarkCaptures !== undefined &&
         landmarkCaptures !== null &&
@@ -97,13 +139,18 @@ function App() {
       ) {
         const distance_0 = land
 
-        // // console.log("**************************")
-        // // console.log("[0]", distance_0[0])
-        // // console.log("[152]", distance_0[152])
-        // // console.log("[10]", distance_0[10])
-        // // console.log("[234]", distance_0[234])
-        // // console.log("[454]", distance_0[454])
-        // // console.log("**************************")
+        if (XAver !== undefined && YAver != undefined) {
+          //const a = absDistance(originalXAver, XAver)
+          const a = originalXAver - XAver
+          //const b = absDistance(originalYAver, YAver)
+          const b = originalYAver - YAver
+          //console.log("originx:", originalXAver, " originy:", originalYAver)
+          //console.log("newx:", XAver, " newy:", YAver)
+          //console.log("a:", a, " b:", b)
+          // if (!test) {
+          //   console.log("a:", a, " b:", b)
+          // }
+        }
 
         /**
          * 1. 스케일 작업
@@ -120,34 +167,6 @@ function App() {
           distance_0[i].z = distance_0[i].z / scale
         }
 
-        // const _0to152Distancenew = calculateScaleDistance(
-        //   distance_0[10],
-        //   distance_0[152]
-        // )
-
-        // const test =
-        //   captuer0to152Distance * 100000 - _0to152Distancenew * 100000
-        // console.log("1**************************1")
-        // console.log("1", captuer0to152Distance * 100000)
-        // console.log("2", _0to152Distancenew * 100000)
-        // console.log("diff", test)
-        // console.log("1**************************1")
-
-        // // distance_0[10].x = distance_0[10].x / scale
-        // // distance_0[10].y = distance_0[0].y / scale
-        // // distance_0[10].z = distance_0[10].z / scale
-        // // distance_0[152].x = distance_0[152].x / scale
-        // // distance_0[152].y = distance_0[152].y / scale
-        // // distance_0[152].z = distance_0[152].z / scale
-
-        // // console.log("1**************************1")
-        // // console.log("[0]", distance_0[0])
-        // // console.log("[152]", distance_0[152])
-        // // console.log("[10]", distance_0[10])
-        // // console.log("[234]", distance_0[234])
-        // // console.log("[454]", distance_0[454])
-        // // console.log("1**************************1")
-
         /**
          * 2. 0번째 인덱스 거리 조정
          */
@@ -160,101 +179,19 @@ function App() {
           distance_0[i].z = distance_0[i].z + diffZ_0
         }
 
-        // // distance_0[10].x = distance_0[10].x + diffX_0
-        // // distance_0[10].y = distance_0[10].y + diffY_0
-        // // distance_0[10].z = distance_0[10].z + diffZ_0
-        // // distance_0[152].x = distance_0[152].x + diffX_0
-        // // distance_0[152].y = distance_0[152].y + diffY_0
-        // // distance_0[152].z = distance_0[152].z + diffZ_0
-
-        // console.log("2**************************2")
-        // console.log("[0]", distance_0[0])
-        // console.log("[152]", distance_0[152])
-        // console.log("[10]", distance_0[10])
-        // console.log("[234]", distance_0[234])
-        // console.log("[454]", distance_0[454])
-        // console.log("2**************************2")
-
-        // const _0to152Distance1 = calculateScaleDistance(
-        //   landmarkCaptures[10],
-        //   distance_0[10]
-        // )
-
-        // const _0to152Distance2 = calculateScaleDistance(
-        //   landmarkCaptures[152],
-        //   distance_0[152]
-        // )
-
-        // console.log("1", _0to152Distance1, "  ", _0to152Distance2)
-
+        //두 값에 대한 거리 계산
         let distance = 0
-
         for (let i = 0; i < distance_0.length - 1; i++) {
-          distance += calculateScaleDistance(landmarkCaptures[i], distance_0[i])
+          distance += euclideanDistance3D(landmarkCaptures[i], distance_0[i])
         }
 
-        // distance += calculateScaleDistance(landmarkCaptures[10], distance_0[10])
-        // distance += calculateScaleDistance(
-        //   landmarkCaptures[152],
-        //   distance_0[152]
-        // )
-        // distance += calculateScaleDistance(landmarkCaptures[8], distance_0[8])
-        // distance += calculateScaleDistance(
-        //   landmarkCaptures[234],
-        //   distance_0[234]
-        // )
-        // distance += calculateScaleDistance(
-        //   landmarkCaptures[454],
-        //   distance_0[454]
-        // )
-
-        if (minimum >= distance) {
-          minimum = distance
-          console.log("distance", distance)
-        }
-
-        // const ab = (a / b) * 100
-        // //console.log("new", ab)
-
-        // if (averCount < 10) {
-        //   averSum = averSum + ab
-        //   averCount = averCount + 1
-        //   aver = averSum / averCount
-        // } else if (averCount == 10) {
-        //   console.log("aver 10 ", aver)
-        //   averCount = averCount + 1
-        // }
-        //console.log("averSum", averSum)
-        // console.log("averCount", averCount)
-
-        // /**
-        //  * 3. 거리 합산
-        //  */
-        // if (distance_0 !== undefined && captureDistance !== 0) {
-        //   let distance = 0
-        //   // for (let i = 0; i < distance_0.length - 1; i++) {
-        //   //   distance += euclideanDistance3D(distance_0[0], distance_0[i + 1])
-        //   // }
-        //   distance += euclideanDistance3D(distance_0[234], distance_0[454])
-        //   distance += euclideanDistance3D(distance_0[234], distance_0[152])
-        //   distance += euclideanDistance3D(distance_0[234], distance_0[10])
-        //   distance += euclideanDistance3D(distance_0[454], distance_0[152])
-        //   distance += euclideanDistance3D(distance_0[454], distance_0[10])
-        //   const diffDistance = absDistance(captureDistance, distance)
-        //   // console.log("3**************************3")
-        //   // console.log("diffDistance", diffDistance)
-        //   // console.log("captureDistance", captureDistance)
-        //   // console.log("distance", distance)
-        //   // console.log("3**************************3")
-
-        //   if (diffDistance < 0.002) {
-        //     console.log("**************************")
-        //     console.log("**************************")
-        //     console.log("diffDistance", diffDistance)
-        //     console.log("captureDistance", captureDistance)
+        // if (Math.abs(a) < 0.02 && Math.abs(b) < 0.02) {
+        //   test = true
+        //   //console.log("x:", a, " y:", b)
+        //   //console.log("distance", distance)
+        //   if (minimum >= distance) {
+        //     minimum = distance
         //     console.log("distance", distance)
-        //     console.log("**************************")
-        //     console.log("**************************")
         //   }
         // }
       }
@@ -312,8 +249,83 @@ function App() {
     return distance
   }
 
+  function vecLength(vec) {
+    return Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2])
+  }
+
+  const getAngle = (noseTip, rightEye, leftEye) => {
+    // 두 지점 사이의 거리 차이 백터
+    const vec = [
+      noseTip.x - rightEye.x,
+      noseTip.y - rightEye.y,
+      noseTip.z - rightEye.z,
+    ]
+
+    const vec1 = [
+      noseTip.x - leftEye.x,
+      noseTip.y - leftEye.y,
+      noseTip.z - leftEye.z,
+    ]
+
+    //x 절편
+    const xAxis = [1, 0, 0]
+    //y 절편
+    const yAxis = [0, 1, 0]
+
+    //x 절편이랑 스칼라 곱
+    const xdotProduct =
+      vec[0] * xAxis[0] + vec[1] * xAxis[1] + vec[2] * xAxis[2]
+    //y 절편이랑 스칼라 곱
+    const ydotProduct =
+      vec[0] * yAxis[0] + vec[1] * yAxis[1] + vec[2] * yAxis[2]
+
+    // 두지점 사이의 길이
+    const vecLength = Math.sqrt(
+      vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]
+    )
+
+    //x 절편이랑 스칼라 곱
+    const xdotProduct1 =
+      vec1[0] * xAxis[0] + vec1[1] * xAxis[1] + vec1[2] * xAxis[2]
+    //y 절편이랑 스칼라 곱
+    const ydotProduct1 =
+      vec1[0] * yAxis[0] + vec1[1] * yAxis[1] + vec1[2] * yAxis[2]
+
+    // 두지점 사이의 길이
+    const vec1Length = Math.sqrt(
+      vec1[0] * vec1[0] + vec1[1] * vec1[1] + vec1[2] * vec1[2]
+    )
+
+    // x 절편의 길이
+    const xAxisLength = Math.sqrt(
+      xAxis[0] * xAxis[0] + xAxis[1] * xAxis[1] + xAxis[2] * xAxis[2]
+    )
+    // y 절편의 길이
+    const yAxisLength = Math.sqrt(
+      yAxis[0] * yAxis[0] + yAxis[1] * yAxis[1] + yAxis[2] * yAxis[2]
+    )
+
+    //x cos 각도
+    const xcosAngle = xdotProduct / (vecLength * xAxisLength)
+    //y cos 각도
+    const ycosAngle = ydotProduct / (vecLength * yAxisLength)
+
+    //x cos 각도
+    const xcosAngle1 = xdotProduct1 / (vec1Length * xAxisLength)
+    //y cos 각도
+    const ycosAngle1 = ydotProduct1 / (vec1Length * yAxisLength)
+
+    const xangle = Math.acos(xcosAngle)
+    const yangle = Math.acos(ycosAngle)
+
+    const xangle1 = Math.acos(xcosAngle1)
+    const yangle1 = Math.acos(ycosAngle1)
+
+    return [xangle, yangle, xangle1, yangle1]
+  }
+
   const buttonClick = async () => {
-    console.log(land)
+    //console.log(land)
     landmarkCaptures = land
 
     canvasRef1.current.width = webcamRef.current.video.videoWidth
@@ -322,7 +334,6 @@ function App() {
     const canvasElement1 = canvasRef1.current
     const canvasCtx1 = canvasElement1.getContext("2d")
 
-    console.log(results1)
     canvasCtx1.save()
     canvasCtx1.clearRect(0, 0, canvasElement1.width, canvasElement1.height)
     if (results1.multiFaceLandmarks) {
@@ -364,12 +375,6 @@ function App() {
       canvasCtx1.restore()
     }
 
-    console.log("[0]", landmarkCaptures[0])
-    console.log("[152]", landmarkCaptures[152])
-    console.log("[10]", landmarkCaptures[10])
-    console.log("[234]", landmarkCaptures[234])
-    console.log("[454]", landmarkCaptures[454])
-
     if (
       landmarkCaptures !== undefined &&
       landmarkCaptures !== null &&
@@ -379,164 +384,88 @@ function App() {
         landmarkCaptures[10],
         landmarkCaptures[152]
       )
-      console.log("captuer0to152Distance", captuer0to152Distance)
-
-      // const a = calculateScaleDistance(
-      //   landmarkCaptures[10],
-      //   landmarkCaptures[8]
-      // )
-
-      // const b = calculateScaleDistance(
-      //   landmarkCaptures[8],
-      //   landmarkCaptures[152]
-      // )
-
-      // const ab = a / b
-      // console.log("original", ab)
-
-      // let distance = 0
-      // // for (let i = 0; i < landmarkCaptures.length - 1; i++) {
-      // //   distance += euclideanDistance3D(
-      // //     landmarkCaptures[0],
-      // //     landmarkCaptures[i + 1]
-      // //   )
-      // // }
-
-      // distance += euclideanDistance3D(
-      //   landmarkCaptures[234],
-      //   landmarkCaptures[454]
-      // )
-      // distance += euclideanDistance3D(
-      //   landmarkCaptures[234],
-      //   landmarkCaptures[152]
-      // )
-      // distance += euclideanDistance3D(
-      //   landmarkCaptures[234],
-      //   landmarkCaptures[10]
-      // )
-      // distance += euclideanDistance3D(
-      //   landmarkCaptures[454],
-      //   landmarkCaptures[152]
-      // )
-      // distance += euclideanDistance3D(
-      //   landmarkCaptures[454],
-      //   landmarkCaptures[10]
-      // )
-
-      // captureDistance = distance
-      // console.log("distance", distance)
     }
+
+    const angle = getAngle(
+      landmarkCaptures[4],
+      landmarkCaptures[145],
+      landmarkCaptures[374]
+    )
+    //console.log("x:", yaw[0], " y:", yaw[1], "x:", yaw[2], " y:", yaw[3])
+    originalXAver = (angle[0] + angle[2]) / 2 - 1.5
+    originalYAver = (angle[1] + angle[3]) / 2 - 0.9
+    console.log("x:", originalXAver, " y:", originalYAver)
   }
 
   const buttonClick1 = async () => {
-    console.log(land)
-    const distance_0 = land
+    refPoints = []
+    meshArrays = []
+    const radius = 0.35
+    const centerX = 0.05
+    const centerY = 0.05
 
-    console.log("**************************")
-    console.log("1. 보정 전 값")
-    console.log("[0]", distance_0[0])
-    console.log("[152]", distance_0[152])
-    console.log("[10]", distance_0[10])
-    console.log("[234]", distance_0[234])
-    console.log("[454]", distance_0[454])
-    console.log("**************************")
-
-    /**
-     * 1. 스케일 작업
-     */
-    const _0to152Distance = calculateScaleDistance(
-      distance_0[10],
-      distance_0[152]
-    )
-
-    const scale = _0to152Distance / captuer0to152Distance
-    for (let i = 0; i < distance_0.length; i++) {
-      distance_0[i].x = distance_0[i].x / scale
-      distance_0[i].y = distance_0[i].y / scale
-      distance_0[i].z = distance_0[i].z / scale
-    }
-    // distance_0[10].x = distance_0[10].x / scale
-    // distance_0[10].y = distance_0[0].y / scale
-    // distance_0[10].z = distance_0[10].z / scale
-    // distance_0[152].x = distance_0[152].x / scale
-    // distance_0[152].y = distance_0[152].y / scale
-    // distance_0[152].z = distance_0[152].z / scale
-
-    console.log("**************************")
-    console.log("2. 스케일 작업")
-    console.log("[0]", distance_0[0])
-    console.log("[152]", distance_0[152])
-    console.log("[10]", distance_0[10])
-    console.log("[234]", distance_0[234])
-    console.log("[454]", distance_0[454])
-    console.log("**************************")
-
-    /**
-     * 2. 10번째 인덱스 거리 조정
-     */
-    const diffX_0 = landmarkCaptures[10].x - distance_0[10].x
-    const diffY_0 = landmarkCaptures[10].y - distance_0[10].y
-    const diffZ_0 = landmarkCaptures[10].z - distance_0[10].z
-    for (let i = 0; i < land.length - 1; i++) {
-      distance_0[i].x = distance_0[i].x + diffX_0
-      distance_0[i].y = distance_0[i].y + diffY_0
-      distance_0[i].z = distance_0[i].z + diffZ_0
+    for (let angle = 0; angle < 360; angle += 15) {
+      let x = centerX + radius * Math.cos(angle * (Math.PI / 180))
+      let y = centerY + radius * Math.sin(angle * (Math.PI / 180))
+      refPoints.push([x, y])
     }
 
-    // distance_0[10].x = distance_0[10].x + diffX_0
-    // distance_0[10].y = distance_0[10].y + diffY_0
-    // distance_0[10].z = distance_0[10].z + diffZ_0
-    // distance_0[152].x = distance_0[152].x + diffX_0
-    // distance_0[152].y = distance_0[152].y + diffY_0
-    // distance_0[152].z = distance_0[152].z + diffZ_0
-
-    console.log("**************************")
-    console.log("3. 10번째 인덱스 거리 조정")
-    console.log("[0]", distance_0[0])
-    console.log("[152]", distance_0[152])
-    console.log("[10]", distance_0[10])
-    console.log("[234]", distance_0[234])
-    console.log("[454]", distance_0[454])
-    console.log("**************************")
-
-    /**
-     * 3. 거리 합산
-     */
-    if (distance_0 !== undefined && captureDistance !== 0) {
-      let distance = 0
-      // for (let i = 0; i < distance_0.length - 1; i++) {
-      //   distance += euclideanDistance3D(distance_0[0], distance_0[i + 1])
-      // }
-      distance += euclideanDistance3D(distance_0[234], distance_0[454])
-      distance += euclideanDistance3D(distance_0[234], distance_0[152])
-      distance += euclideanDistance3D(distance_0[234], distance_0[10])
-      distance += euclideanDistance3D(distance_0[454], distance_0[152])
-      distance += euclideanDistance3D(distance_0[454], distance_0[10])
-      const diffDistance = absDistance(captureDistance, distance)
-      console.log("**************************")
-      console.log("4. 거리 합산 결과 값")
-      console.log("diffDistance", diffDistance)
-      console.log("captureDistance", captureDistance)
-      console.log("distance", distance)
-      console.log("**************************")
-
-      // if (diffDistance < 0.002) {
-      //   console.log("**************************")
-      //   console.log("**************************")
-      //   console.log("diffDistance", diffDistance)
-      //   console.log("captureDistance", captureDistance)
-      //   console.log("distance", distance)
-      //   console.log("**************************")
-      //   console.log("**************************")
-      // }
-    }
+    console.log(refPoints)
+    registerMeshPoints = true
   }
 
   const buttonClick2 = async () => {
-    aver = 0
-    averCount = 0
-    averSum = 0
+    test = false
     minimum = 100000
+  }
+
+  const buttonClick3 = async () => {
+    const url = "/webservices/GeneralService.asmx"
+    const headers = {
+      "Content-Type": "text/xml;charset=UTF-8",
+      soapAction: "http://tempuri.org/UpdateUserDataJSON2",
+    }
+
+    const body = {
+      AuthKeyEncD:
+        "NTL8j6WmZY6OIW7lhpxa2J2jlEx7W0MOLkYeGVGAGefY+EDA1UDHX4OftZsDihP73lZlGBnHJobM R27BHgwDp8qpoHYQvpjybQ5opMjwj10iVFOISQCuPtDHkfe3d9PU6wF8QGhNHmX3QMIudUAtcvny 0QdfKj1wHl9wja4lVSdNu+cZ1QMRWxnLhPNZOntqeKUdeA6jIDJKYScoQd+MAcv/rbd109AgqGcW es9NBgg+o7aiO5+Yh9H+WhCeyWdXKAmBkn+72yAO6szof09HwMnWajZGok4JwsjgxIfNtMgtyi2O mQ1W5u08aNSYzEyh4SoNomUg6e/UFUnQpeqw7Q==",
+      SessionIDEncN: "79e81d0b-ba7d-7ef3-2919-949d8912a19d",
+      UserOid: 100000025,
+      DeviceIdEncN: "asd",
+      InputJSON: JSON.stringify(meshArrays),
+      Mode: "UPDATE_ANGLE_POINTS",
+    }
+
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+      <soap:Body>
+        <UpdateUserDataJSON2 xmlns="http://tempuri.org/">
+          <AuthKeyEncD>${body.AuthKeyEncD}</AuthKeyEncD>
+          <SessionIDEncN>${body.SessionIDEncN}</SessionIDEncN>
+          <UserOid>${body.UserOid}</UserOid>
+          <DeviceIdEncN>${body.DeviceIdEncN}</DeviceIdEncN>
+          <InputJSON>${body.InputJSON}</InputJSON>
+          <Mode>${body.Mode}</Mode>
+        </UpdateUserDataJSON2>
+      </soap:Body>
+    </soap:Envelope>`
+
+    const fetchData = async () => {
+      try {
+        const response = await axios.post(url, xml, {
+          headers,
+        })
+        const { data } = response
+
+        console.log(data)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
+    fetchData()
   }
 
   return (
@@ -562,6 +491,13 @@ function App() {
           onClick={buttonClick2}
         >
           버튼3
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-primary"
+          onClick={buttonClick3}
+        >
+          버튼4
         </button>
       </div>
       <Webcam
