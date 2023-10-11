@@ -23,6 +23,7 @@ function App() {
   var originalYAver = 0
   var refPoints = []
   var meshArrays = []
+  var meshLandArrays = []
   var registerMeshPoints = false
 
   var test = false
@@ -117,7 +118,7 @@ function App() {
         if (
           registerMeshPoints &&
           refPoints.length > 0 &&
-          meshArrays.length < 24
+          meshArrays.length < 73
         ) {
           const x = refPoints[meshArrays.length][0]
           const y = refPoints[meshArrays.length][1]
@@ -126,11 +127,128 @@ function App() {
 
           if (Math.abs(x - XAver) < 0.1 && Math.abs(y - YAver) < 0.1) {
             meshArrays.push([XAver, YAver])
+            meshLandArrays.push({ count: meshArrays.length, land })
+
             console.log(
               "🚀 ~ file: App.js:129 ~ onResults ~ meshArrays:",
               meshArrays
             )
           }
+
+          if (meshArrays.length >= 73) {
+            registerMeshPoints = false
+            console.log(
+              "🚀 ~ file: App.js:143 ~ onResults ~ registerMeshPoints:",
+              registerMeshPoints
+            )
+          }
+        }
+      }
+
+      if (
+        !registerMeshPoints &&
+        land !== undefined &&
+        meshLandArrays.length > 72
+      ) {
+        let minDistance = Number.POSITIVE_INFINITY
+        let nearestPoint = null
+        let nearestIndex = -1
+
+        // 유클리드 거리 계산 및 가장 가까운 포인트 및 인덱스 찾기
+        for (let i = 0; i < meshArrays.length; i++) {
+          const point = meshArrays[i]
+          const [x1, y1] = point
+          const [x2, y2] = [XAver, YAver]
+          const distance = Math.sqrt(
+            Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)
+          )
+
+          if (distance < minDistance) {
+            minDistance = distance
+            nearestPoint = point
+            nearestIndex = i
+          }
+        }
+
+        // console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+        // console.log("새로운 값이 가장 가까운 포인트:", nearestPoint)
+        // console.log("가장 가까운 포인트의 인덱스:", nearestIndex)
+        //console.log("기존 카운트:", meshLandArrays[nearestIndex].count)
+
+        const distance_0 = land
+
+        /**
+         * 1. 스케일 작업
+         */
+        const _0to152Distance = calculateScaleDistance(
+          distance_0[10],
+          distance_0[152]
+        )
+
+        const captuer0to152Distance = calculateScaleDistance(
+          meshLandArrays[nearestIndex].land[10],
+          meshLandArrays[nearestIndex].land[152]
+        )
+
+        const scale = _0to152Distance / captuer0to152Distance
+        for (let i = 0; i < distance_0.length; i++) {
+          distance_0[i].x = distance_0[i].x / scale
+          distance_0[i].y = distance_0[i].y / scale
+          distance_0[i].z = distance_0[i].z / scale
+        }
+
+        /**
+         * 2. 0번째 인덱스 거리 조정
+         */
+        const diffX_0 =
+          meshLandArrays[nearestIndex].land[10].x - distance_0[10].x
+        const diffY_0 =
+          meshLandArrays[nearestIndex].land[10].y - distance_0[10].y
+        const diffZ_0 =
+          meshLandArrays[nearestIndex].land[10].z - distance_0[10].z
+        for (let i = 0; i < land.length - 1; i++) {
+          distance_0[i].x = distance_0[i].x + diffX_0
+          distance_0[i].y = distance_0[i].y + diffY_0
+          distance_0[i].z = distance_0[i].z + diffZ_0
+        }
+
+        // 3. 각도에 대해서 각도 Point 편차만큼 조정 필요??
+
+        //두 값에 대한 거리 계산
+        let distance = 0
+        for (let i = 0; i < distance_0.length - 1; i++) {
+          distance += euclideanDistance3D(
+            meshLandArrays[nearestIndex].land[i],
+            distance_0[i]
+          )
+        }
+
+        const a = meshArrays[nearestIndex][0] - XAver
+        const b = meshArrays[nearestIndex][1] - YAver
+        if (Math.abs(a) < 0.15 && Math.abs(b) < 0.15) {
+          test = true
+          //console.log("x:", a, " y:", b)
+          //console.log("distance", distance)
+          // if (minimum >= distance) {
+          //   minimum = distance
+
+          //   console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+          //   console.log("새로운 값이 가장 가까운 포인트:", nearestPoint)
+          //   console.log("가장 가까운 포인트의 인덱스:", nearestIndex)
+          //   console.log("기존 카운트:", meshLandArrays[nearestIndex].count)
+          //   console.log(
+          //     "🚀 ~ file: App.js:184 ~ onResults ~ distance:",
+          //     distance
+          //   )
+          //   //console.log("distance", distance)
+          // }
+          console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+          console.log("새로운 값이 가장 가까운 포인트:", nearestPoint)
+          console.log("가장 가까운 포인트의 인덱스:", nearestIndex)
+          console.log("기존 카운트:", meshLandArrays[nearestIndex].count)
+          console.log("🚀 ~ file: App.js:184 ~ onResults ~ distance:", distance)
+        } else {
+          console.log("Math.abs(a):", Math.abs(a), " Math.abs(b):", Math.abs(b))
         }
       }
 
@@ -142,11 +260,13 @@ function App() {
       ) {
         const distance_0 = land
 
+        let a = 100
+        let b = 100
         if (XAver !== undefined && YAver != undefined) {
           //const a = absDistance(originalXAver, XAver)
-          const a = originalXAver - XAver
+          a = originalXAver - XAver
           //const b = absDistance(originalYAver, YAver)
-          const b = originalYAver - YAver
+          b = originalYAver - YAver
           //console.log("originx:", originalXAver, " originy:", originalYAver)
           //console.log("newx:", XAver, " newy:", YAver)
           //console.log("a:", a, " b:", b)
@@ -188,16 +308,19 @@ function App() {
           distance += euclideanDistance3D(landmarkCaptures[i], distance_0[i])
         }
 
-        // if (Math.abs(a) < 0.02 && Math.abs(b) < 0.02) {
-        //   test = true
-        //   console.log("🚀 ~ file: App.js:184 ~ onResults ~ distance:", distance)
-        //   //console.log("x:", a, " y:", b)
-        //   //console.log("distance", distance)
-        //   if (minimum >= distance) {
-        //     minimum = distance
-        //     console.log("distance", distance)
-        //   }
-        // }
+        if (Math.abs(a) < 0.02 && Math.abs(b) < 0.02) {
+          test = true
+          //console.log("x:", a, " y:", b)
+          //console.log("distance", distance)
+          if (minimum >= distance) {
+            minimum = distance
+            console.log(
+              "🚀 ~ file: App.js:184 ~ onResults ~ distance:",
+              distance
+            )
+            console.log("distance", distance)
+          }
+        }
       }
     }
 
@@ -404,11 +527,18 @@ function App() {
   const buttonClick1 = async () => {
     refPoints = []
     meshArrays = []
-    const radius = 0.35
+    meshLandArrays = []
+    const radius = 0.15
     const centerX = 0.05
     const centerY = 0.05
 
-    for (let angle = 0; angle < 360; angle += 15) {
+    // 정면도 추가 (예를 들어, 0도로 정면을 추가)
+    // const frontAngle = 0 // 정면 각도
+    // let xFront = centerX + radius * Math.cos(frontAngle * (Math.PI / 180))
+    // let yFront = centerY + radius * Math.sin(frontAngle * (Math.PI / 180))
+    refPoints.push([0, 0])
+
+    for (let angle = 0; angle < 360; angle += 5) {
       let x = centerX + radius * Math.cos(angle * (Math.PI / 180))
       let y = centerY + radius * Math.sin(angle * (Math.PI / 180))
       refPoints.push([x, y])
@@ -480,29 +610,29 @@ function App() {
           className="btn btn-outline-primary me-2"
           onClick={buttonClick}
         >
-          버튼1
+          얼굴표본저장
         </button>
         <button
           type="button"
           className="btn btn-outline-primary"
           onClick={buttonClick1}
         >
-          버튼2
+          각도저장+얼굴표본저장
         </button>
         <button
           type="button"
           className="btn btn-outline-primary"
           onClick={buttonClick2}
         >
-          버튼3
+          리셋
         </button>
-        <button
+        {/* <button
           type="button"
           className="btn btn-outline-primary"
           onClick={buttonClick3}
         >
           버튼4
-        </button>
+        </button> */}
       </div>
       <Webcam
         ref={webcamRef}
