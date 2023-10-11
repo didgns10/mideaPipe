@@ -126,7 +126,10 @@ function App() {
 
           if (Math.abs(x - XAver) < 0.1 && Math.abs(y - YAver) < 0.1) {
             meshArrays.push([XAver, YAver])
-            console.log(meshArrays)
+            console.log(
+              "🚀 ~ file: App.js:129 ~ onResults ~ meshArrays:",
+              meshArrays
+            )
           }
         }
       }
@@ -187,6 +190,7 @@ function App() {
 
         // if (Math.abs(a) < 0.02 && Math.abs(b) < 0.02) {
         //   test = true
+        //   console.log("🚀 ~ file: App.js:184 ~ onResults ~ distance:", distance)
         //   //console.log("x:", a, " y:", b)
         //   //console.log("distance", distance)
         //   if (minimum >= distance) {
@@ -325,7 +329,7 @@ function App() {
   }
 
   const buttonClick = async () => {
-    //console.log(land)
+    console.log(land)
     landmarkCaptures = land
 
     canvasRef1.current.width = webcamRef.current.video.videoWidth

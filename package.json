@@ -2,7 +2,7 @@
   "name": "mediapipe-react",
   "version": "0.1.0",
   "private": true,
-  "proxy": "https://dev.ghostpass.ai",
+  "proxy": "https://gpass.ghostpass.ai",
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1640029074",
     "@mediapipe/face_mesh": "^0.4.1633559619",
